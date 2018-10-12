@@ -76,8 +76,14 @@ public class DefaultWorkerExecutor implements WorkerExecutor {
     @Override
     public void submit(Class<? extends Runnable> actionClass, Action<? super WorkerConfiguration> configAction) {
         WorkerConfiguration configuration = new DefaultWorkerConfiguration(fileResolver);
+        File workingDirectory = workerDirectoryProvider.getWorkingDirectory();
+        configuration.getForkOptions().setWorkingDir(workingDirectory);
         configAction.execute(configuration);
         String description = configuration.getDisplayName() != null ? configuration.getDisplayName() : actionClass.getName();
+
+        if (!workingDirectory.equals(configuration.getForkOptions().getWorkingDir())) {
+            throw new WorkExecutionException(description + ": setting the working directory of a worker is not supported.");
+        }
 
         // Serialize parameters in this thread prior to starting work in a separate thread
         ActionExecutionSpec spec;
@@ -254,8 +260,15 @@ public class DefaultWorkerExecutor implements WorkerExecutor {
 
     @Contextual
     private static class WorkExecutionException extends RuntimeException {
+        WorkExecutionException(String description) {
+            super(toMessage(description));
+        }
         WorkExecutionException(String description, Throwable cause) {
-            super("A failure occurred while executing " + description, cause);
+            super(toMessage(description), cause);
+        }
+
+        private static String toMessage(String description) {
+            return "A failure occurred while executing " + description;
         }
     }
 

@@ -42,7 +42,6 @@ class WorkerDaemonIntegrationTest extends AbstractWorkerExecutorIntegrationTest 
             task runInWorker(type: WorkerTask) {
                 isolationMode = IsolationMode.PROCESS
                 runnableClass = WorkingDirRunnable.class
-                additionalForkOptions = { it.workingDir = project.file("ignoredDirectory") }
             }
         """
 
@@ -63,6 +62,27 @@ class WorkerDaemonIntegrationTest extends AbstractWorkerExecutorIntegrationTest 
 
         and:
         GradleContextualExecuter.isLongLivingProcess() || gradle.standardOutput.contains("Shutdown working dir: " + workerHomeDir)
+    }
+
+    def "setting the working directory of a worker is not supported"() {
+        withRunnableClassInBuildScript()
+        buildFile << """
+            import org.gradle.workers.IsolationMode
+
+            $runnableThatPrintsWorkingDirectory
+
+            task runInWorker(type: WorkerTask) {
+                isolationMode = IsolationMode.PROCESS
+                runnableClass = WorkingDirRunnable.class
+                additionalForkOptions = { it.workingDir = project.file("unsupported") }
+            }
+        """
+
+        when:
+        fails("runInWorker")
+
+        then:
+        failureCauseContains('setting the working directory of a worker is not supported')
     }
 
     @Requires(TestPrecondition.JDK_ORACLE)
