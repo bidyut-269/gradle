@@ -20,7 +20,7 @@ import org.gradle.util.DeprecationLogger;
 
 public abstract class AbstractProperty<T> extends AbstractMinimalProvider<T> implements PropertyInternal<T> {
     private enum State {
-        Mutable, FinalLenient, FinalStrict
+        Mutable, FinalNextGet, FinalLenient, FinalStrict
     }
     private State state = State.Mutable;
 
@@ -33,14 +33,20 @@ public abstract class AbstractProperty<T> extends AbstractMinimalProvider<T> imp
     }
 
     @Override
-    public void finalizeValueAndWarnAboutChanges() {
+    public void finalizeValueOnReadAndWarnAboutChanges() {
         if (state == State.Mutable) {
-            makeFinal();
-            state = State.FinalLenient;
+            state = State.FinalNextGet;
         }
     }
 
     protected abstract void makeFinal();
+
+    protected void assertReadable() {
+        if (state == State.FinalNextGet) {
+            makeFinal();
+            state = State.FinalLenient;
+        }
+    }
 
     protected boolean assertMutable() {
         if (state == State.FinalStrict) {

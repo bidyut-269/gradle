@@ -60,7 +60,7 @@ task thing(type: SomeTask) {
         skipped(":thing")
     }
 
-    def "can finalize the value of a property"() {
+    def "can finalize the value of a property using API"() {
         given:
         buildFile << """
 Integer counter = 0
@@ -138,7 +138,7 @@ task after {
         file("build/out.txt").text == "final value"
     }
 
-    def "reports failure to finalize task property"() {
+    def "reports failure due to broken task property"() {
         taskTypeWritesPropertyValueToFile()
         buildFile << """
 
@@ -157,7 +157,7 @@ task thing(type: SomeTask) {
         failure.assertHasCause("broken")
     }
 
-    def "provider callable used to set task property is called once only when task executes"() {
+    def "task property calculation is called once only when task executes"() {
         taskTypeWritesPropertyValueToFile()
         buildFile << """
 
@@ -189,6 +189,36 @@ task thing(type: SomeTask) {
 
         then:
         output.count("calculating value") == 0
+    }
+
+    def "does not calculate task property value when task is skipped due to @SkipWhenEmpty"() {
+        buildFile << """
+
+class SomeTask extends DefaultTask {
+    @Input
+    final Property<String> prop = project.objects.property(String)
+    
+    @InputFiles @SkipWhenEmpty
+    final SetProperty<RegularFile> outputFile = project.objects.setProperty(RegularFile)
+    
+    @TaskAction
+    void go() {
+    }
+}
+
+task thing(type: SomeTask) {
+    prop = providers.provider { 
+        throw new RuntimeException("should not be called")
+    }
+}
+            
+        """
+
+        when:
+        run("thing")
+
+        then:
+        result.assertTaskSkipped(":thing")
     }
 
     def "can set property value from DSL using a value or a provider"() {

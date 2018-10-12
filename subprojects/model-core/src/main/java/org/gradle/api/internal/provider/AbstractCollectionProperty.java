@@ -122,6 +122,7 @@ public abstract class AbstractCollectionProperty<T, C extends Collection<T>> ext
 
     @Override
     public boolean isPresent() {
+        assertReadable();
         if (!value.present()) {
             return false;
         }
@@ -135,6 +136,7 @@ public abstract class AbstractCollectionProperty<T, C extends Collection<T>> ext
 
     @Override
     public C get() {
+        assertReadable();
         List<T> values = new ArrayList<T>(1 + collectors.size());
         value.collectInto(valueCollector, values);
         for (Collector<T> collector : collectors) {
@@ -146,6 +148,11 @@ public abstract class AbstractCollectionProperty<T, C extends Collection<T>> ext
     @Nullable
     @Override
     public C getOrNull() {
+        assertReadable();
+        return doGetOrNull();
+    }
+
+    private C doGetOrNull() {
         List<T> values = new ArrayList<T>(1 + collectors.size());
         if (!value.maybeCollectInto(valueCollector, values)) {
             return null;
@@ -217,7 +224,7 @@ public abstract class AbstractCollectionProperty<T, C extends Collection<T>> ext
 
     @Override
     protected void makeFinal() {
-        C collection = getOrNull();
+        C collection = doGetOrNull();
         if (collection != null) {
             value = new ElementsFromCollection<T>(collection);
         } else {
@@ -228,15 +235,12 @@ public abstract class AbstractCollectionProperty<T, C extends Collection<T>> ext
 
     @Override
     public String toString() {
-        final String valueState;
-        if (value == EMPTY_COLLECTION) {
-            valueState = "empty";
-        } else if (value == NO_VALUE_COLLECTOR) {
-            valueState = "undefined";
-        } else {
-            valueState = "defined";
+        List<String> values = new ArrayList<String>(1 + collectors.size());
+        values.add(value.toString());
+        for (Collector<T> collector : collectors) {
+            values.add(collector.toString());
         }
-        return String.format("%s(%s, %s)", collectionType.getSimpleName().toLowerCase(), elementType, valueState);
+        return String.format("%s(%s, %s)", collectionType.getSimpleName().toLowerCase(), elementType, values);
     }
 
     private static class ValidatingValueCollector<T> implements ValueCollector<T> {

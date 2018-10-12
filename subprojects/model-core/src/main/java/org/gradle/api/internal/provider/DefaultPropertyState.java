@@ -104,16 +104,19 @@ public class DefaultPropertyState<T> extends AbstractProperty<T> implements Prop
 
     @Override
     public T get() {
+        assertReadable();
         return provider.get();
     }
 
     @Override
     public T getOrNull() {
+        assertReadable();
         return provider.getOrNull();
     }
 
     @Override
     public T getOrElse(T defaultValue) {
+        assertReadable();
         T t = provider.getOrNull();
         if (t == null) {
             return defaultValue;
@@ -123,6 +126,7 @@ public class DefaultPropertyState<T> extends AbstractProperty<T> implements Prop
 
     @Override
     public boolean isPresent() {
+        assertReadable();
         return provider.isPresent();
     }
 

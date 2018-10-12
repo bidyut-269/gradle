@@ -60,7 +60,7 @@ public class DefaultTaskInputPropertySpec extends TaskInputsDeprecationSupport i
         // TODO - push this into ValidatingValue
         Object container = value.getContainerValue();
         if (container instanceof PropertyInternal) {
-            ((PropertyInternal) container).finalizeValueAndWarnAboutChanges();
+            ((PropertyInternal) container).finalizeValueOnReadAndWarnAboutChanges();
         }
     }
 

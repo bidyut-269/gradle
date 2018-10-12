@@ -322,7 +322,7 @@ abstract class PropertySpec<T> extends ProviderSpec<T> {
         property.getOrNull() == null
 
         where:
-        method << ["finalizeValue", "finalizeValueAndWarnAboutChanges"]
+        method << ["finalizeValue", "finalizeValueOnReadAndWarnAboutChanges"]
     }
 
     def "can finalize value when value set"() {
@@ -337,7 +337,7 @@ abstract class PropertySpec<T> extends ProviderSpec<T> {
         property.getOrNull() == someValue()
 
         where:
-        method << ["finalizeValue", "finalizeValueAndWarnAboutChanges"]
+        method << ["finalizeValue", "finalizeValueOnReadAndWarnAboutChanges"]
     }
 
     def "replaces provider with fixed value when value finalized"() {
@@ -347,7 +347,7 @@ abstract class PropertySpec<T> extends ProviderSpec<T> {
 
         when:
         property.set(provider)
-        property."$method"()
+        property.finalizeValue()
 
         then:
         1 * function.call() >> someValue()
@@ -361,9 +361,31 @@ abstract class PropertySpec<T> extends ProviderSpec<T> {
         present
         result == someValue()
         0 * _
+    }
 
-        where:
-        method << ["finalizeValue", "finalizeValueAndWarnAboutChanges"]
+    def "replaces provider with fixed value when value finalized on next read"() {
+        def property = property()
+        def function = Mock(Callable)
+        def provider = new DefaultProvider<T>(function)
+
+        when:
+        property.set(provider)
+        property.finalizeValueOnReadAndWarnAboutChanges()
+
+        then:
+        0 * _
+
+        when:
+        def present = property.present
+        def result = property.getOrNull()
+
+        then:
+        1 * function.call() >> someValue()
+        0 * _
+
+        and:
+        present
+        result == someValue()
     }
 
     def "replaces provider with fixed missing value when value finalized"() {
@@ -373,7 +395,7 @@ abstract class PropertySpec<T> extends ProviderSpec<T> {
 
         when:
         property.set(provider)
-        property."$method"()
+        property.finalizeValue()
 
         then:
         1 * function.call() >> null
@@ -387,9 +409,31 @@ abstract class PropertySpec<T> extends ProviderSpec<T> {
         !present
         result == null
         0 * _
+    }
 
-        where:
-        method << ["finalizeValue", "finalizeValueAndWarnAboutChanges"]
+    def "replaces provider with fixed missing value when value finalized on next read"() {
+        def property = property()
+        def function = Mock(Callable)
+        def provider = new DefaultProvider<T>(function)
+
+        when:
+        property.set(provider)
+        property.finalizeValueOnReadAndWarnAboutChanges()
+
+        then:
+        0 * _
+
+        when:
+        def present = property.present
+        def result = property.getOrNull()
+
+        then:
+        1 * function.call() >> null
+        0 * _
+
+        and:
+        !present
+        result == null
     }
 
     def "can finalize value when already finalized"() {
@@ -408,8 +452,8 @@ abstract class PropertySpec<T> extends ProviderSpec<T> {
 
         when:
         property.finalizeValue()
-        property.finalizeValueAndWarnAboutChanges()
-        property.finalizeValueAndWarnAboutChanges()
+        property.finalizeValueOnReadAndWarnAboutChanges()
+        property.finalizeValueOnReadAndWarnAboutChanges()
 
         then:
         0 * _
@@ -433,7 +477,8 @@ abstract class PropertySpec<T> extends ProviderSpec<T> {
         given:
         def property = property()
         property.set(someValue())
-        property.finalizeValueAndWarnAboutChanges()
+        property.finalizeValueOnReadAndWarnAboutChanges()
+        property.get()
 
         when:
         property.set(someOtherValue())
@@ -446,7 +491,7 @@ abstract class PropertySpec<T> extends ProviderSpec<T> {
         given:
         def property = property()
         property.set(someValue())
-        property.finalizeValueAndWarnAboutChanges()
+        property.finalizeValueOnReadAndWarnAboutChanges()
         property.set(someOtherValue())
         property.finalizeValue()
 
@@ -476,7 +521,8 @@ abstract class PropertySpec<T> extends ProviderSpec<T> {
         given:
         def property = property()
         property.set(someValue())
-        property.finalizeValueAndWarnAboutChanges()
+        property.finalizeValueOnReadAndWarnAboutChanges()
+        property.get()
 
         when:
         property.set(Mock(ProviderInternal))
@@ -506,11 +552,12 @@ abstract class PropertySpec<T> extends ProviderSpec<T> {
         e2.message == 'The value for this property is final and cannot be changed any further.'
     }
 
-    def "ignores set value using any type after value finalized"() {
+    def "ignores set value using any type after value finalized leniently"() {
         given:
         def property = property()
         property.set(someValue())
-        property.finalizeValueAndWarnAboutChanges()
+        property.finalizeValueOnReadAndWarnAboutChanges()
+        property.get()
 
         when:
         property.setFromAnyValue(someOtherValue())

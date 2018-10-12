@@ -25,12 +25,12 @@ public interface PropertyInternal<T> extends ProviderInternal<T> {
     void setFromAnyValue(Object object);
 
     /**
-     * Same semantics as {@link Property#finalizeValue()}.
+     * Same semantics as {@link Property#finalizeValue()}. Finalizes the value of this property eagerly.
      */
     void finalizeValue();
 
     /**
-     * Same semantics as {@link Property#finalizeValue()}, but ignores changes to this property instead of failing. Generates a deprecation warning on changes.
+     * Same semantics as {@link Property#finalizeValue()}, but finalizes the value of this property lazily and ignores changes to this property instead of failing. Generates a deprecation warning on changes.
      */
-    void finalizeValueAndWarnAboutChanges();
+    void finalizeValueOnReadAndWarnAboutChanges();
 }
