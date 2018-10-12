@@ -18,6 +18,7 @@ package org.gradle.launcher.daemon.context;
 import com.google.common.base.Joiner;
 import org.gradle.internal.serialize.Decoder;
 import org.gradle.internal.serialize.Encoder;
+import org.gradle.launcher.daemon.configuration.DaemonParameters;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -38,19 +39,21 @@ public class DefaultDaemonContext implements DaemonContext {
     private final Long pid;
     private final Integer idleTimeout;
     private final List<String> daemonOpts;
+    private final DaemonParameters.Priority priority;
 
-    public DefaultDaemonContext(String uid, File javaHome, File daemonRegistryDir, Long pid, Integer idleTimeout, List<String> daemonOpts) {
+    public DefaultDaemonContext(String uid, File javaHome, File daemonRegistryDir, Long pid, Integer idleTimeout, List<String> daemonOpts, DaemonParameters.Priority priority) {
         this.uid = uid;
         this.javaHome = javaHome;
         this.daemonRegistryDir = daemonRegistryDir;
         this.pid = pid;
         this.idleTimeout = idleTimeout;
         this.daemonOpts = daemonOpts;
+        this.priority = priority;
     }
 
     public String toString() {
-        return String.format("DefaultDaemonContext[uid=%s,javaHome=%s,daemonRegistryDir=%s,pid=%s,idleTimeout=%s,daemonOpts=%s]",
-            uid, javaHome, daemonRegistryDir, pid, idleTimeout, Joiner.on(',').join(daemonOpts));
+        return String.format("DefaultDaemonContext[uid=%s,javaHome=%s,daemonRegistryDir=%s,pid=%s,idleTimeout=%s,priority=%s,daemonOpts=%s]",
+            uid, javaHome, daemonRegistryDir, pid, idleTimeout, priority, Joiner.on(',').join(daemonOpts));
     }
 
     public String getUid() {
@@ -77,6 +80,11 @@ public class DefaultDaemonContext implements DaemonContext {
         return daemonOpts;
     }
 
+    @Override
+    public DaemonParameters.Priority getPriority() {
+        return priority;
+    }
+
     private static class Serializer implements org.gradle.internal.serialize.Serializer<DefaultDaemonContext> {
 
         @Override
@@ -92,7 +100,8 @@ public class DefaultDaemonContext implements DaemonContext {
             for (int i=0; i<daemonOptCount; i++) {
                 daemonOpts.add(decoder.readString());
             }
-            return new DefaultDaemonContext(uid, javaHome, registryDir, pid, idle, daemonOpts);
+            DaemonParameters.Priority priority = DaemonParameters.Priority.values()[decoder.readInt()];
+            return new DefaultDaemonContext(uid, javaHome, registryDir, pid, idle, daemonOpts, priority);
         }
 
         @Override
@@ -112,6 +121,7 @@ public class DefaultDaemonContext implements DaemonContext {
             for (String daemonOpt : context.daemonOpts) {
                 encoder.writeString(daemonOpt);
             }
+            encoder.writeInt(context.getPriority().ordinal());
         }
     }
 }
