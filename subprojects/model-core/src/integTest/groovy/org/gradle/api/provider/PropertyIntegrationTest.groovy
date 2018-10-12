@@ -21,19 +21,8 @@ import org.gradle.integtests.fixtures.AbstractIntegrationSpec
 class PropertyIntegrationTest extends AbstractIntegrationSpec {
     def "can use property as task input"() {
         given:
+        taskTypeWritesPropertyValueToFile()
         buildFile << """
-class SomeTask extends DefaultTask {
-    @Input
-    final Property<String> prop = project.objects.property(String)
-    
-    @OutputFile
-    final Property<RegularFile> outputFile = project.objects.fileProperty()
-    
-    @TaskAction
-    void go() { 
-        outputFile.get().asFile.text = prop.get()
-    }
-}
 
 task thing(type: SomeTask) {
     prop = System.getProperty('prop')
@@ -116,6 +105,9 @@ class SomeTask extends DefaultTask {
 task thing(type: SomeTask) {
     prop = "value 1"
     outputFile = layout.buildDirectory.file("out.txt")
+    doLast {
+        prop.set("ignored")
+    }
 }
 
 afterEvaluate {
@@ -144,6 +136,59 @@ task after {
 
         then:
         file("build/out.txt").text == "final value"
+    }
+
+    def "reports failure to finalize task property"() {
+        taskTypeWritesPropertyValueToFile()
+        buildFile << """
+
+task thing(type: SomeTask) {
+    prop = providers.provider { throw new RuntimeException("broken") }
+    outputFile = layout.buildDirectory.file("out.txt")
+}
+            
+        """
+
+        when:
+        fails("thing")
+
+        then:
+        failure.assertHasDescription("Execution failed for task ':thing'.")
+        failure.assertHasCause("broken")
+    }
+
+    def "provider callable used to set task property is called once only when task executes"() {
+        taskTypeWritesPropertyValueToFile()
+        buildFile << """
+
+task thing(type: SomeTask) {
+    prop = providers.provider { 
+        println("calculating value")
+        return "value"
+    }
+    outputFile = layout.buildDirectory.file("out.txt")
+}
+            
+        """
+
+        when:
+        run("thing")
+
+        then:
+        output.count("calculating value") == 1
+
+        when:
+        run("thing")
+
+        then:
+        result.assertTaskSkipped(":thing")
+        output.count("calculating value") == 1
+
+        when:
+        run("help")
+
+        then:
+        output.count("calculating value") == 0
     }
 
     def "can set property value from DSL using a value or a provider"() {
@@ -321,5 +366,22 @@ project.extensions.create("some", SomeExtension, objects)
         outputContains("Using method ObjectFactory.property() method to create a property of type Set<T> has been deprecated. This will fail with an error in Gradle 6.0. Please use the ObjectFactory.setProperty() method instead.")
         outputContains("Using method ObjectFactory.property() method to create a property of type Directory has been deprecated. This will fail with an error in Gradle 6.0. Please use the ObjectFactory.directoryProperty() method instead.")
         outputContains("Using method ObjectFactory.property() method to create a property of type RegularFile has been deprecated. This will fail with an error in Gradle 6.0. Please use the ObjectFactory.fileProperty() method instead.")
+    }
+
+    def taskTypeWritesPropertyValueToFile() {
+        buildFile << """
+            class SomeTask extends DefaultTask {
+                @Input
+                final Property<String> prop = project.objects.property(String)
+                
+                @OutputFile
+                final Property<RegularFile> outputFile = project.objects.fileProperty()
+                
+                @TaskAction
+                void go() {
+                    outputFile.get().asFile.text = prop.get()
+                }
+            }
+        """
     }
 }
