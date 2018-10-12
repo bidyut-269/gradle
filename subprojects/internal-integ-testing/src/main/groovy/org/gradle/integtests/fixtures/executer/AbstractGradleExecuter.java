@@ -519,14 +519,14 @@ public abstract class AbstractGradleExecuter implements GradleExecuter {
         }
 
         if (isSharedDaemons()) {
-            buildJvmOpts.add("-Xmx1024m");
+            buildJvmOpts.add("-Xmx1g");
         } else {
             buildJvmOpts.add("-Xmx512m");
         }
         if (JVM_VERSION_DETECTOR.getJavaVersion(Jvm.forHome(getJavaHome())).compareTo(JavaVersion.VERSION_1_8) < 0) {
             buildJvmOpts.add("-XX:MaxPermSize=320m");
         } else {
-            buildJvmOpts.add("-XX:MaxMetaspaceSize=512m");
+            buildJvmOpts.add("-XX:MaxMetaspaceSize=1g");
         }
         buildJvmOpts.add("-XX:+HeapDumpOnOutOfMemoryError");
         buildJvmOpts.add("-XX:HeapDumpPath=" + buildContext.getGradleUserHomeDir());
