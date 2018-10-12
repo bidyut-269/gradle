@@ -36,7 +36,8 @@ class DownloadingScalaToolChainTest extends Specification {
     DependencyHandler dependencyHandler = Mock()
     FileResolver fileResolver = Mock()
     File gradleUserHome = Mock()
-    DownloadingScalaToolChain scalaToolChain = new DownloadingScalaToolChain(gradleUserHome, workerDaemonFactory, configurationContainer, dependencyHandler, fileResolver)
+    File rootProjectDir = Mock()
+    DownloadingScalaToolChain scalaToolChain = new DownloadingScalaToolChain(gradleUserHome, rootProjectDir, workerDaemonFactory, configurationContainer, dependencyHandler, fileResolver)
     ScalaPlatform scalaPlatform = Mock()
 
     def setup() {

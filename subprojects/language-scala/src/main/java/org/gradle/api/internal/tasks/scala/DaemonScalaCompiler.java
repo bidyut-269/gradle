@@ -52,11 +52,13 @@ public class DaemonScalaCompiler<T extends ScalaJavaJointCompileSpec> extends Ab
             Arrays.asList("scala", "com.typesafe.zinc", "xsbti", "com.sun.tools.javac", "sbt");
     private final Iterable<File> zincClasspath;
     private final PathToFileResolver fileResolver;
+    private final File daemonWorkingDir;
 
-    public DaemonScalaCompiler(Compiler<T> delegate, WorkerDaemonFactory workerDaemonFactory, Iterable<File> zincClasspath, PathToFileResolver fileResolver) {
+    public DaemonScalaCompiler(File daemonWorkingDir, Compiler<T> delegate, WorkerDaemonFactory workerDaemonFactory, Iterable<File> zincClasspath, PathToFileResolver fileResolver) {
         super(delegate, workerDaemonFactory);
         this.zincClasspath = zincClasspath;
         this.fileResolver = fileResolver;
+        this.daemonWorkingDir = daemonWorkingDir;
     }
 
     @Override
@@ -64,6 +66,7 @@ public class DaemonScalaCompiler<T extends ScalaJavaJointCompileSpec> extends Ab
         ForkOptions javaOptions = spec.getCompileOptions().getForkOptions();
         ScalaForkOptions scalaOptions = spec.getScalaCompileOptions().getForkOptions();
         JavaForkOptions javaForkOptions = new BaseForkOptionsConverter(fileResolver).transform(mergeForkOptions(javaOptions, scalaOptions));
+        javaForkOptions.setWorkingDir(daemonWorkingDir);
 
         return new DaemonForkOptionsBuilder(fileResolver)
             .javaForkOptions(javaForkOptions)

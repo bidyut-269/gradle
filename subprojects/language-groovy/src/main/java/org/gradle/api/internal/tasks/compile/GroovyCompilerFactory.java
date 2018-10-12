@@ -28,6 +28,7 @@ import org.gradle.internal.jvm.inspection.JvmVersionDetector;
 import org.gradle.language.base.internal.compile.Compiler;
 import org.gradle.language.base.internal.compile.CompilerFactory;
 import org.gradle.process.internal.DefaultExecActionFactory;
+import org.gradle.process.internal.worker.child.WorkerDirectoryProvider;
 import org.gradle.workers.internal.IsolatedClassloaderWorkerFactory;
 import org.gradle.workers.internal.WorkerDaemonFactory;
 import org.gradle.workers.internal.WorkerFactory;
@@ -60,7 +61,7 @@ public class GroovyCompilerFactory implements CompilerFactory<GroovyJavaJointCom
         } else {
             workerFactory = inProcessWorkerFactory;
         }
-        Compiler<GroovyJavaJointCompileSpec> groovyCompiler = new DaemonGroovyCompiler(new DaemonSideCompiler(), project.getServices().get(ClassPathRegistry.class), workerFactory, fileResolver, jvmVersionDetector);
+        Compiler<GroovyJavaJointCompileSpec> groovyCompiler = new DaemonGroovyCompiler(project.getServices().get(WorkerDirectoryProvider.class).getWorkingDirectory(), new DaemonSideCompiler(), project.getServices().get(ClassPathRegistry.class), workerFactory, fileResolver, jvmVersionDetector);
         return new AnnotationProcessorDiscoveringCompiler<GroovyJavaJointCompileSpec>(new NormalizingGroovyCompiler(groovyCompiler), processorDetector);
     }
 

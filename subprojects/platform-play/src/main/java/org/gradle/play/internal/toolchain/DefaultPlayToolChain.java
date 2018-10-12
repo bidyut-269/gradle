@@ -32,6 +32,7 @@ import org.gradle.play.internal.routes.RoutesCompilerFactory;
 import org.gradle.play.internal.twirl.TwirlCompilerFactory;
 import org.gradle.play.platform.PlayPlatform;
 import org.gradle.process.internal.worker.WorkerProcessFactory;
+import org.gradle.process.internal.worker.child.WorkerDirectoryProvider;
 import org.gradle.util.CollectionUtils;
 import org.gradle.util.TreeVisitor;
 import org.gradle.workers.internal.WorkerDaemonFactory;
@@ -46,15 +47,16 @@ public class DefaultPlayToolChain implements PlayToolChainInternal {
     private final ConfigurationContainer configurationContainer;
     private final DependencyHandler dependencyHandler;
     private final WorkerProcessFactory workerProcessBuilderFactory;
+    private final WorkerDirectoryProvider workerDirectoryProvider;
     private final ClasspathFingerprinter fingerprinter;
 
-    public DefaultPlayToolChain(PathToFileResolver fileResolver, WorkerDaemonFactory workerDaemonFactory, ConfigurationContainer configurationContainer,
-                                DependencyHandler dependencyHandler, WorkerProcessFactory workerProcessBuilderFactory, ClasspathFingerprinter fingerprinter) {
+    public DefaultPlayToolChain(PathToFileResolver fileResolver, WorkerDaemonFactory workerDaemonFactory, ConfigurationContainer configurationContainer, DependencyHandler dependencyHandler, WorkerProcessFactory workerProcessBuilderFactory, WorkerDirectoryProvider workerDirectoryProvider, ClasspathFingerprinter fingerprinter) {
         this.fileResolver = fileResolver;
         this.workerDaemonFactory = workerDaemonFactory;
         this.configurationContainer = configurationContainer;
         this.dependencyHandler = dependencyHandler;
         this.workerProcessBuilderFactory = workerProcessBuilderFactory;
+        this.workerDirectoryProvider = workerDirectoryProvider;
         this.fingerprinter = fingerprinter;
     }
 
@@ -74,7 +76,7 @@ public class DefaultPlayToolChain implements PlayToolChainInternal {
             Set<File> twirlClasspath = resolveToolClasspath(TwirlCompilerFactory.createAdapter(targetPlatform).getDependencyNotation().toArray()).resolve();
             Set<File> routesClasspath = resolveToolClasspath(RoutesCompilerFactory.createAdapter(targetPlatform).getDependencyNotation()).resolve();
             Set<File> javascriptClasspath = resolveToolClasspath(GoogleClosureCompiler.getDependencyNotation()).resolve();
-            return new DefaultPlayToolProvider(fileResolver, workerDaemonFactory, workerProcessBuilderFactory, targetPlatform, twirlClasspath, routesClasspath, javascriptClasspath, fingerprinter);
+            return new DefaultPlayToolProvider(fileResolver, workerDirectoryProvider.getWorkingDirectory(), workerDaemonFactory, workerProcessBuilderFactory, targetPlatform, twirlClasspath, routesClasspath, javascriptClasspath, fingerprinter);
         } catch (ResolveException e) {
             return new UnavailablePlayToolProvider(e);
         }

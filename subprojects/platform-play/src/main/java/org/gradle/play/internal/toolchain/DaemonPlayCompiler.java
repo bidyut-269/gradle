@@ -34,18 +34,21 @@ public class DaemonPlayCompiler<T extends PlayCompileSpec> extends AbstractDaemo
     private final Iterable<File> compilerClasspath;
     private final Iterable<String> classLoaderPackages;
     private final PathToFileResolver fileResolver;
+    private final File daemonWorkingDir;
 
-    public DaemonPlayCompiler(Compiler<T> compiler, WorkerDaemonFactory workerDaemonFactory, Iterable<File> compilerClasspath, Iterable<String> classLoaderPackages, PathToFileResolver fileResolver) {
+    public DaemonPlayCompiler(File daemonWorkingDir, Compiler<T> compiler, WorkerDaemonFactory workerDaemonFactory, Iterable<File> compilerClasspath, Iterable<String> classLoaderPackages, PathToFileResolver fileResolver) {
         super(compiler, workerDaemonFactory);
         this.compilerClasspath = compilerClasspath;
         this.classLoaderPackages = classLoaderPackages;
         this.fileResolver = fileResolver;
+        this.daemonWorkingDir = daemonWorkingDir;
     }
 
     @Override
     protected DaemonForkOptions toDaemonForkOptions(PlayCompileSpec spec) {
         BaseForkOptions forkOptions = spec.getForkOptions();
         JavaForkOptions javaForkOptions = new BaseForkOptionsConverter(fileResolver).transform(forkOptions);
+        javaForkOptions.setWorkingDir(daemonWorkingDir);
 
         return new DaemonForkOptionsBuilder(fileResolver)
             .javaForkOptions(javaForkOptions)
