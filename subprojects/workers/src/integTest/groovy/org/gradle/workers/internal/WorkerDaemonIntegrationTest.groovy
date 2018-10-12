@@ -109,7 +109,6 @@ class WorkerDaemonIntegrationTest extends AbstractWorkerExecutorIntegrationTest 
                         bootstrapClasspath(new File("${normaliseFileSeparators(systemSpecificAbsolutePath('foo'))}"))
                         defaultCharacterEncoding = "UTF-8"
                         enableAssertions = true
-                        workingDir = file('${outputFileDirPath}')
                         environment "foo", "bar"
                     }
                 }
@@ -203,8 +202,6 @@ class WorkerDaemonIntegrationTest extends AbstractWorkerExecutorIntegrationTest 
                     assert arguments.contains("-ea");
 
                     assert runtimeMxBean.getBootClassPath().replaceAll(Pattern.quote(File.separator),'/').endsWith("/foo");
-
-                    assert new File(System.getProperty("user.dir")).equals(new File('${outputFileDirPath}'));
 
                     assert System.getenv("foo").equals("bar")
 
