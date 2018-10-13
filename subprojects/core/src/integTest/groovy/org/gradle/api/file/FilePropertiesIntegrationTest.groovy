@@ -741,7 +741,7 @@ class SomeTask extends DefaultTask {
 
         then:
         failure.assertHasDescription("Execution failed for task ':consumer'.")
-        failure.assertHasCause("Failed to capture fingerprint of input files for task ':consumer' property 'inputFiles' during up-to-date check.")
+        failure.assertHasCause("No value has been specified for this provider.")
         executedAndNotSkipped(':producer', ':consumer')
     }
 
